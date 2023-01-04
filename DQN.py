@@ -12,7 +12,9 @@ class DQN(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(observation_space, 32)
         self.fc2 = nn.Linear(32, 64)
-        self.fc3 = nn.Linear(64, action_space.n)
+        self.fc3 = nn.Linear(64, 128)
+        self.fc4 = nn.Linear(128, 64)
+        self.fc5 = nn.Linear(64, action_space.n)
     
     def forward(self, x):
         x = self.fc1(x)
@@ -21,12 +23,16 @@ class DQN(nn.Module):
         x = F.relu(x)
         x = self.fc3(x)
         x = F.relu(x)
+        x = self.fc4(x)
+        x = F.relu(x)
+        x = self.fc5(x)
+        x = F.relu(x)
 
         return x
 
 
 class DQNAgent:
-    def __init__(self, observation_space, action_space, gamma=0.95, epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, lr=0.01):
+    def __init__(self, observation_space, action_space, gamma=0.95, epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.975, alpha=0.01, alpha_decay=0.01, batch_size=64, lr=0.01):
         self.memory = deque(maxlen=100_000)
         self.gamma = gamma
         self.epsilon = epsilon
@@ -38,7 +44,8 @@ class DQNAgent:
         self.lr = lr
         self.action_space = action_space
         self.observation_space = observation_space
-        self.dqn = DQN(self.observation_space, self.action_space).cuda()
+        self.dqn = DQN(self.observation_space, self.action_space)
+        self.dqn.cuda()
         self.criterion = nn.MSELoss()
         self.optimizer = torch.optim.Adam(self.dqn.parameters(), lr=self.lr)
     
@@ -87,7 +94,10 @@ class DQNAgent:
         self.decay_epsilon()
 
     def save_model(self):
-        torch.save(self.dqn.state_dict(), 'dqn_model')
+        torch.save(self.dqn.state_dict(), 'dqn_model.pth')
     
     def load_model(self):
-        self.dqn = torch.load('dqn_model')
+        self.dqn.load_state_dict(torch.load('dqn_model.pth'))
+    
+    def eval_model(self):
+        self.dqn.eval()

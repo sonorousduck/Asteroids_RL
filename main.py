@@ -2,7 +2,7 @@ import gymnasium as gym
 from DQN import DQNAgent
 import numpy as np
 from tqdm import tqdm
-
+import matplotlib.pyplot as plt
 # Action Space:
 # 0 - Do Nothing
 # 1 - Shoot
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         env = gym.make('ALE/Asteroids-ram-v5')
     
     state, info = env.reset(seed=7)
-    num_episodes = 100
+    num_episodes = 200
     agent = DQNAgent(env.observation_space.shape[0], env.action_space)
     rewards = []
 
@@ -72,6 +72,8 @@ if __name__ == "__main__":
         agent.save_model()
         np.savetxt('rewards.txt', np.array(rewards))      
         env.close()
+        plt.plot(rewards)
+
 
     else:
         state, info = env.reset(seed=7)
@@ -79,7 +81,7 @@ if __name__ == "__main__":
 
         state = agent.preprocess_state(state)
         episode_reward = 0
-        agent.dqn.eval()
+        agent.eval_model()
         while not done:
             action = agent.act(state)
             next_state, reward, terminated, truncated, _ = env.step(action)
