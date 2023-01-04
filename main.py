@@ -73,6 +73,7 @@ if __name__ == "__main__":
         np.savetxt('rewards.txt', np.array(rewards))      
         env.close()
         plt.plot(rewards)
+        plt.savefig('rewards.png')
 
 
     else:
