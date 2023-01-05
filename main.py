@@ -21,47 +21,84 @@ import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
-    display = False
+    try:
+        display = False
 
-    if display:
-    #     env = gym.make('ALE/Breakout-ram-v5', render_mode="human")
-    # else:
-    #     env = gym.make('ALE/Breakout-ram-v5')
-        env = gym.make('ALE/Asteroids-ram-v5', render_mode="human")
-    else:
-        env = gym.make('ALE/Asteroids-ram-v5')
-    
-    state, info = env.reset(seed=7)
-    num_episodes = 200
-    agent = DQNAgent(env.observation_space.shape[0], env.action_space)
-    rewards = []
+        if display:
+        #     env = gym.make('ALE/Breakout-ram-v5', render_mode="human")
+        # else:
+        #     env = gym.make('ALE/Breakout-ram-v5')
+            env = gym.make('ALE/Asteroids-ram-v5', render_mode="human")
+        else:
+            env = gym.make('ALE/Asteroids-ram-v5')
+        
+        state, info = env.reset(seed=7)
+        num_episodes = 200
+        agent = DQNAgent(env.observation_space.shape[0], env.action_space)
+        rewards = []
+        avg_rewards = []
 
-    if display:
-        agent.load_model()
-    
+        if display:
+            agent.load_model()
+        
 
-    if not display:
-        epochs = tqdm(range(num_episodes))
+        if not display:
+            epochs = tqdm(range(num_episodes))
 
-        for epoch in epochs:
+            for epoch in epochs:
+                state, info = env.reset(seed=7)
+                done = False
+
+                state = agent.preprocess_state(state)
+                episode_reward = 0
+
+                while not done:
+                    # action
+                    # if epoch % 100 == 0:
+                    #     # env.render(render_mode='human')
+                    #     print
+
+                    action = agent.act(state)
+                    next_state, reward, terminated, truncated, _ = env.step(action)
+                    next_state = agent.preprocess_state(next_state)
+
+                    agent.remember(state, action, reward, next_state, terminated, truncated)
+                    agent.replay()
+
+                    state = next_state
+                    episode_reward += reward
+
+                    if terminated or truncated:
+                        done = True
+                
+                rewards.append(episode_reward)
+                avg_rewards.append(np.mean(rewards[-10:]))
+                epochs.set_postfix_str(f"Episodic Reward: {episode_reward}, Avg Reward: {avg_rewards}")
+
+            agent.save_model()
+            np.savetxt('rewards.txt', np.array(rewards))      
+            env.close()
+            plt.plot(rewards)
+            plt.plot(avg_rewards)
+            plt.xlabel("Epoch")
+            plt.ylabel("Reward")
+            plt.savefig('rewards.png')
+
+
+        else:
             state, info = env.reset(seed=7)
             done = False
 
             state = agent.preprocess_state(state)
             episode_reward = 0
-
+            agent.eval_model()
             while not done:
-                # action
-                # if epoch % 100 == 0:
-                #     # env.render(render_mode='human')
-                #     print
-
                 action = agent.act(state)
                 next_state, reward, terminated, truncated, _ = env.step(action)
                 next_state = agent.preprocess_state(next_state)
 
-                agent.remember(state, action, reward, next_state, terminated, truncated)
-                agent.replay()
+                # agent.remember(state, action, reward, next_state, terminated, truncated)
+                # agent.replay()
 
                 state = next_state
                 episode_reward += reward
@@ -69,34 +106,9 @@ if __name__ == "__main__":
                 if terminated or truncated:
                     done = True
             
-            rewards.append(episode_reward)
-            epochs.set_postfix_str(f"Episodic Reward: {episode_reward}")
-
+    except:
         agent.save_model()
         np.savetxt('rewards.txt', np.array(rewards))      
         env.close()
         plt.plot(rewards)
         plt.savefig('rewards.png')
-
-
-    else:
-        state, info = env.reset(seed=7)
-        done = False
-
-        state = agent.preprocess_state(state)
-        episode_reward = 0
-        agent.eval_model()
-        while not done:
-            action = agent.act(state)
-            next_state, reward, terminated, truncated, _ = env.step(action)
-            next_state = agent.preprocess_state(next_state)
-
-            # agent.remember(state, action, reward, next_state, terminated, truncated)
-            # agent.replay()
-
-            state = next_state
-            episode_reward += reward
-
-            if terminated or truncated:
-                done = True
-        
