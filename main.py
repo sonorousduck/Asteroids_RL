@@ -24,6 +24,9 @@ if __name__ == "__main__":
     display = False
 
     if display:
+    #     env = gym.make('ALE/Breakout-ram-v5', render_mode="human")
+    # else:
+    #     env = gym.make('ALE/Breakout-ram-v5')
         env = gym.make('ALE/Asteroids-ram-v5', render_mode="human")
     else:
         env = gym.make('ALE/Asteroids-ram-v5')
