@@ -1,5 +1,5 @@
 import gymnasium as gym
-from DQN import DQNAgent
+from DDPG import DDPGAgent
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -22,19 +22,20 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     display = False
-
-    if display:
     #     env = gym.make('ALE/Breakout-ram-v5', render_mode="human")
     # else:
     #     env = gym.make('ALE/Breakout-ram-v5')
+    if display:
+
         env = gym.make('ALE/Asteroids-ram-v5', render_mode="human")
     else:
         env = gym.make('ALE/Asteroids-ram-v5')
     
     state, info = env.reset(seed=7)
     num_episodes = 200
-    agent = DQNAgent(env.observation_space.shape[0], env.action_space)
+    agent = DDPGAgent(env)
     rewards = []
+    avg_rewards = []
 
     if display:
         agent.load_model()
@@ -44,11 +45,9 @@ if __name__ == "__main__":
         epochs = tqdm(range(num_episodes))
 
         for epoch in epochs:
-            state, info = env.reset(seed=7)
-            done = False
-
-            state = agent.preprocess_state(state)
+            state, info = env.reset()
             episode_reward = 0
+            done = False
 
             while not done:
                 # action
@@ -58,10 +57,12 @@ if __name__ == "__main__":
 
                 action = agent.act(state)
                 next_state, reward, terminated, truncated, _ = env.step(action)
-                next_state = agent.preprocess_state(next_state)
+                # next_state = agent.preprocess_state(next_state)
 
-                agent.remember(state, action, reward, next_state, terminated, truncated)
-                agent.replay()
+                agent.memory.push(state, action, reward, next_state, terminated)
+                if len(agent.memory) > 128:
+                    agent.update(batch_size=128)
+                
 
                 state = next_state
                 episode_reward += reward
@@ -70,12 +71,17 @@ if __name__ == "__main__":
                     done = True
             
             rewards.append(episode_reward)
-            epochs.set_postfix_str(f"Episodic Reward: {episode_reward}")
+            avg_rewards.append(np.mean(rewards[-10:]))
+            epochs.set_postfix_str(f"Episodic Reward: {episode_reward}, Avg Reward: {avg_rewards}")
+            agent.decay()
 
         agent.save_model()
         np.savetxt('rewards.txt', np.array(rewards))      
         env.close()
         plt.plot(rewards)
+        plt.plot(avg_rewards)
+        plt.xlabel("Epoch")
+        plt.ylabel("Reward")
         plt.savefig('rewards.png')
 
 
@@ -83,13 +89,12 @@ if __name__ == "__main__":
         state, info = env.reset(seed=7)
         done = False
 
-        state = agent.preprocess_state(state)
         episode_reward = 0
         agent.eval_model()
+        agent.epsilon = 0
         while not done:
             action = agent.act(state)
             next_state, reward, terminated, truncated, _ = env.step(action)
-            next_state = agent.preprocess_state(next_state)
 
             # agent.remember(state, action, reward, next_state, terminated, truncated)
             # agent.replay()

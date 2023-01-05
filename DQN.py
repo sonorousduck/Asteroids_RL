@@ -26,13 +26,13 @@ class DQN(nn.Module):
         x = self.fc4(x)
         x = F.relu(x)
         x = self.fc5(x)
-        x = F.relu(x)
+        # x = F.relu(x)
 
         return x
 
 
 class DQNAgent:
-    def __init__(self, observation_space, action_space, gamma=0.95, epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.975, alpha=0.01, alpha_decay=0.01, batch_size=64, lr=0.01):
+    def __init__(self, observation_space, action_space, gamma=0.95, epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.975, alpha=0.01, alpha_decay=0.01, batch_size=64, lr=1e-4):
         self.memory = deque(maxlen=100_000)
         self.gamma = gamma
         self.epsilon = epsilon
