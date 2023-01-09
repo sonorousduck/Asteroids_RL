@@ -13,8 +13,9 @@ class DQN(nn.Module):
         self.fc1 = nn.Linear(observation_space, 32)
         self.fc2 = nn.Linear(32, 64)
         self.fc3 = nn.Linear(64, 128)
-        self.fc4 = nn.Linear(128, 64)
-        self.fc5 = nn.Linear(64, action_space.n)
+        self.fc4 = nn.Linear(128, 256)
+        self.fc5 = nn.Linear(256, 64)
+        self.fc6 = nn.Linear(64, action_space.n)
     
     def forward(self, x):
         x = self.fc1(x)
@@ -26,14 +27,16 @@ class DQN(nn.Module):
         x = self.fc4(x)
         x = F.relu(x)
         x = self.fc5(x)
+        x = F.relu(x)
+        x = self.fc6(x)
         # x = F.relu(x)
 
         return x
 
 
 class DQNAgent:
-    def __init__(self, observation_space, action_space, gamma=0.95, epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.975, alpha=0.01, alpha_decay=0.01, batch_size=64, lr=1e-4):
-        self.memory = deque(maxlen=100_000)
+    def __init__(self, observation_space, action_space, gamma=0.95, epsilon=1.0, epsilon_min=0.05, epsilon_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=256, lr=1e-5):
+        self.memory = deque(maxlen=600_000)
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_min = epsilon_min

@@ -9,12 +9,12 @@ import torch.nn.functional as F
 from actor_critic import *
 from utils import *
 
-device = "gpu" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 class DDPGAgent:
     def __init__(self, env, hidden_size=256, actor_learning_rate=1e-4, critic_learning_rate=1e-3, gamma=0.99, tau=1e-2, max_mem_size=50_000):
         self.observation_space = env.observation_space.shape[0]
-        self.action_space = env.action_space.shape[0]
+        self.action_space = env.action_space.n
         self.env = env
         self.gamma = gamma
         self.tau = tau
@@ -30,12 +30,14 @@ class DDPGAgent:
         self.critic = Critic(self.observation_space + self.action_space, hidden_size, self.action_space)
         self.critic_target = Critic(self.observation_space + self.action_space, hidden_size, self.action_space)
 
-        # Set target to be the same as actor (avoids differences in random initialization most likely)
-        for target_param, param in zip(self.actor_target.parameters(), self.actor.parameters()):
-            target_param.copy_(param.data)
+        with torch.no_grad():
 
-        for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
-            target_param.data.copy_(param.data)
+        # Set target to be the same as actor (avoids differences in random initialization most likely)
+            for target_param, param in zip(self.actor_target.parameters(), self.actor.parameters()):
+                target_param.copy_(param.data)
+
+            for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
+                target_param.data.copy_(param.data)
 
 
         # Training
@@ -63,7 +65,7 @@ class DDPGAgent:
         rewards = torch.FloatTensor(rewards).to(device)
         next_states = torch.FloatTensor(next_states).to(device)
 
-        q_vals = self.critic(states, actions)
+        q_vals = self.critic(states, actions.detach())
         next_actions = self.actor_target(next_states)
         next_q = self.critic_target(next_states, next_actions.detach())
         q_prime = rewards + self.gamma * next_q
@@ -79,12 +81,13 @@ class DDPGAgent:
         critic_loss.backward()
         self.critic_optimizer.step()
 
+        with torch.no_grad():
         # update target networks 
-        for target_param, param in zip(self.actor_target.parameters(), self.actor.parameters()):
-            target_param.data.copy_(param.data * self.tau + target_param.data * (1.0 - self.tau))
-       
-        for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
-            target_param.data.copy_(param.data * self.tau + target_param.data * (1.0 - self.tau))
+            for target_param, param in zip(self.actor_target.parameters(), self.actor.parameters()):
+                target_param.data.copy_(param.data * self.tau + target_param.data * (1.0 - self.tau))
+        
+            for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
+                target_param.data.copy_(param.data * self.tau + target_param.data * (1.0 - self.tau))
     
     def decay(self):
         self.epsilon *= self.epsilon_decay

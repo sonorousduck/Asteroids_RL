@@ -25,15 +25,18 @@ if __name__ == "__main__":
         display = False
 
         if display:
+            env = gym.make("ALE/MsPacman-ram-v5", render_mode="human")
+        else:
+            env = gym.make("ALE/MsPacman-ram-v5")
         #     env = gym.make('ALE/Breakout-ram-v5', render_mode="human")
         # else:
         #     env = gym.make('ALE/Breakout-ram-v5')
-            env = gym.make('ALE/Asteroids-ram-v5', render_mode="human")
-        else:
-            env = gym.make('ALE/Asteroids-ram-v5')
+        #     env = gym.make('ALE/Asteroids-ram-v5', render_mode="human")
+        # else:
+        #     env = gym.make('ALE/Asteroids-ram-v5')
         
         state, info = env.reset(seed=7)
-        num_episodes = 200
+        num_episodes = 600
         agent = DQNAgent(env.observation_space.shape[0], env.action_space)
         rewards = []
         avg_rewards = []
@@ -73,16 +76,16 @@ if __name__ == "__main__":
                 
                 rewards.append(episode_reward)
                 avg_rewards.append(np.mean(rewards[-10:]))
-                epochs.set_postfix_str(f"Episodic Reward: {episode_reward}, Avg Reward: {avg_rewards}")
+                epochs.set_postfix_str(f"Episodic Reward: {episode_reward}, Avg Reward: {avg_rewards[-1]}")
 
             agent.save_model()
-            np.savetxt('rewards.txt', np.array(rewards))      
+            np.savetxt('rewards_ms_pacman.txt', np.array(rewards))      
             env.close()
             plt.plot(rewards)
             plt.plot(avg_rewards)
             plt.xlabel("Epoch")
             plt.ylabel("Reward")
-            plt.savefig('rewards.png')
+            plt.savefig('rewards_pacman.png')
 
 
         else:
@@ -106,9 +109,13 @@ if __name__ == "__main__":
                 if terminated or truncated:
                     done = True
             
-    except:
+    except Exception as e:
+        print(e)
         agent.save_model()
-        np.savetxt('rewards.txt', np.array(rewards))      
+        np.savetxt('rewards_ms_pacman.txt', np.array(rewards))      
         env.close()
         plt.plot(rewards)
-        plt.savefig('rewards.png')
+        plt.plot(avg_rewards)
+        plt.xlabel("Epoch")
+        plt.ylabel("Reward")
+        plt.savefig('rewards_pacman.png')
